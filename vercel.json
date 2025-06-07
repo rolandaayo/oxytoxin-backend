@@ -17,12 +17,6 @@
           "Access-Control-Allow-Credentials": "true"
         }
       }
-    ],
-    "env": {
-      "MONGODB_URI": "@mongodb_uri",
-      "CLOUDINARY_CLOUD_NAME": "@cloudinary_cloud_name",
-      "CLOUDINARY_API_KEY": "@cloudinary_api_key",
-      "CLOUDINARY_SECRET_API_KEY": "@cloudinary_secret_api_key"
-    }
+    ]
   }
   

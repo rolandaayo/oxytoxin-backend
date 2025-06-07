@@ -15,11 +15,20 @@ const adminRoutes = require("./routes/admin");
 const publicRoutes = require("./routes/public");
 
 const app = express();
-const port = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Error:", err);
+  res.status(500).json({
+    status: "error",
+    message: "Internal server error",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined,
+  });
+});
 
 // Welcome route
 app.get("/", (req, res) => {
@@ -37,14 +46,35 @@ app.get("/", (req, res) => {
 app.use("/api/public", publicRoutes); // Public routes for the store frontend
 app.use("/api/admin", adminRoutes); // Admin routes for product management
 
-// Connect to database and start server
-connectDB()
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`Server is running on port: ${port}`);
-    });
-  })
-  .catch((error) => {
-    console.error("Failed to connect to database:", error);
-    process.exit(1);
+// Connect to database
+let isConnected = false;
+
+const connectToDatabase = async () => {
+  if (isConnected) {
+    console.log("Using existing database connection");
+    return;
+  }
+
+  try {
+    await connectDB();
+    isConnected = true;
+    console.log("Database connected successfully");
+  } catch (error) {
+    console.error("Database connection error:", error);
+    throw error;
+  }
+};
+
+// Initialize database connection
+connectToDatabase().catch(console.error);
+
+// For local development
+if (process.env.NODE_ENV !== "production") {
+  const port = process.env.PORT || 4000;
+  app.listen(port, () => {
+    console.log(`Server is running on port: ${port}`);
   });
+}
+
+// Export for serverless
+module.exports = app;

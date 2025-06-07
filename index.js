@@ -46,27 +46,23 @@ app.get("/", (req, res) => {
 app.use("/api/public", publicRoutes); // Public routes for the store frontend
 app.use("/api/admin", adminRoutes); // Admin routes for product management
 
-// Connect to database
-let isConnected = false;
-
-const connectToDatabase = async () => {
-  if (isConnected) {
-    console.log("Using existing database connection");
-    return;
-  }
-
+// Database connection middleware
+app.use(async (req, res, next) => {
   try {
-    await connectDB();
-    isConnected = true;
-    console.log("Database connected successfully");
+    // Only attempt connection for API routes
+    if (req.path.startsWith("/api/")) {
+      await connectDB();
+    }
+    next();
   } catch (error) {
-    console.error("Database connection error:", error);
-    throw error;
+    console.error("Database connection error in middleware:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Database connection error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-};
-
-// Initialize database connection
-connectToDatabase().catch(console.error);
+});
 
 // For local development
 if (process.env.NODE_ENV !== "production") {

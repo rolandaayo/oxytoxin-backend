@@ -30,6 +30,21 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Database connection middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Database connection error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
 // Welcome route
 app.get("/", (req, res) => {
   res.json({
@@ -45,24 +60,6 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/api/public", publicRoutes); // Public routes for the store frontend
 app.use("/api/admin", adminRoutes); // Admin routes for product management
-
-// Database connection middleware
-app.use(async (req, res, next) => {
-  try {
-    // Only attempt connection for API routes
-    if (req.path.startsWith("/api/")) {
-      await connectDB();
-    }
-    next();
-  } catch (error) {
-    console.error("Database connection error in middleware:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Database connection error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
 
 // For local development
 if (process.env.NODE_ENV !== "production") {

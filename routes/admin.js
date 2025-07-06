@@ -82,6 +82,7 @@ router.post("/products", async (req, res) => {
     category,
     stock,
     colors,
+    mainImage,
     images,
     features,
   } = req.body;
@@ -93,7 +94,7 @@ router.post("/products", async (req, res) => {
     "description",
     "category",
     "stock",
-    "images",
+    "mainImage",
   ];
   const missingFields = requiredFields.filter((field) => !req.body[field]);
 
@@ -105,9 +106,6 @@ router.post("/products", async (req, res) => {
   }
 
   try {
-    // Ensure images is an array of image objects
-    const imageArray = Array.isArray(images) ? images : [images];
-
     const product = await Product.create({
       name,
       price: Number(price),
@@ -115,7 +113,8 @@ router.post("/products", async (req, res) => {
       category,
       stock: Number(stock),
       colors: colors || [],
-      image: imageArray.map((img) => img.url), // Store only the URLs from Cloudinary
+      mainImage,
+      images: Array.isArray(images) ? images : images ? [images] : [],
       features: features || [],
       instock: Number(stock) > 0,
     });
@@ -169,6 +168,11 @@ router.patch("/products/:id", async (req, res) => {
       (updates[key] === undefined || updates[key] === null) &&
       delete updates[key]
   );
+
+  // Ensure images is always an array if present
+  if (updates.images && !Array.isArray(updates.images)) {
+    updates.images = [updates.images];
+  }
 
   try {
     // If stock is being updated, update instock status

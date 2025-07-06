@@ -37,9 +37,13 @@ const productSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    image: {
-      type: [String], // Array of Cloudinary image URLs
-      required: [true, "At least one product image is required"],
+    mainImage: {
+      type: String,
+      required: [true, "Main product image is required"],
+    },
+    images: {
+      type: [String],
+      default: [],
     },
     features: {
       type: [String],

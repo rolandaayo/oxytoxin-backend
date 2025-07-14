@@ -13,6 +13,7 @@ console.log("Cloudinary Config:", {
 // Import routes
 const adminRoutes = require("./routes/admin");
 const publicRoutes = require("./routes/public");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -60,13 +61,14 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/api/public", publicRoutes); // Public routes for the store frontend
 app.use("/api/admin", adminRoutes); // Admin routes for product management
+app.use("/api/auth", authRoutes); // Auth routes
 
 // For local development
 if (process.env.NODE_ENV !== "production") {
   const port = process.env.PORT || 4000;
-    app.listen(port, () => {
-      console.log(`Server is running on port: ${port}`);
-    });
+  app.listen(port, () => {
+    console.log(`Server is running on port: ${port}`);
+  });
 }
 
 // Export for serverless

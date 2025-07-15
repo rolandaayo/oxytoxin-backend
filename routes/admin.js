@@ -3,6 +3,8 @@ const router = express.Router();
 const Product = require("../model/product"); // Assuming you have a Product model defined
 const upload = require("../lib/imageUploader"); // Assuming you have an image uploader defined
 const convertImageUrl = require("../lib/imageUrlConvert"); // Assuming you have a function to convert image URLs
+const User = require("../model/user"); // Add this at the top with other requires
+const bcrypt = require("bcrypt"); // Add this at the top with other requires
 
 // Get all products (admin view)
 router.get("/products", async (req, res) => {
@@ -227,6 +229,118 @@ router.delete("/products/:id", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error deleting product",
+      error: error.message,
+    });
+  }
+});
+
+// Get all users (admin view)
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find({}, "-password").sort({ createdAt: -1 });
+    res.status(200).json({
+      status: "success",
+      data: users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching users",
+      error: error.message,
+    });
+  }
+});
+
+// Add new user (admin)
+router.post("/users", async (req, res) => {
+  try {
+    const { name, email, avatar } = req.body;
+    if (!name || !email) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Name and email are required" });
+    }
+    // Check if user already exists
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Email already in use" });
+    }
+    // Generate a random password
+    const randomPassword = Math.random().toString(36).slice(-8);
+    const hashed = await bcrypt.hash(randomPassword, 10);
+    const user = await User.create({
+      name,
+      email,
+      password: hashed,
+      avatar: avatar || "https://randomuser.me/api/portraits/lego/1.jpg",
+    });
+    res.status(201).json({
+      status: "success",
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        status: "error",
+        message: "Error creating user",
+        error: error.message,
+      });
+  }
+});
+
+// Update user (admin)
+router.patch("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    // Only allow updating name, email, avatar
+    const allowed = {};
+    if (updates.name) allowed.name = updates.name;
+    if (updates.email) allowed.email = updates.email;
+    if (updates.avatar) allowed.avatar = updates.avatar;
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: allowed },
+      { new: true, runValidators: true }
+    );
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
+    }
+    res.status(200).json({ status: "success", data: user });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error updating user",
+      error: error.message,
+    });
+  }
+});
+
+// Delete user (admin)
+router.delete("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
+    }
+    res.status(200).json({ status: "success", message: "User deleted" });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error deleting user",
       error: error.message,
     });
   }

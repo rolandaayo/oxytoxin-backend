@@ -58,6 +58,11 @@ router.post("/login", async (req, res) => {
         .status(400)
         .json({ status: "error", message: "Invalid credentials" });
     }
+    // Update lastLogin and loginHistory
+    user.lastLogin = new Date();
+    user.loginHistory = user.loginHistory || [];
+    user.loginHistory.push(new Date());
+    await user.save();
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
       expiresIn: "7d",
     });

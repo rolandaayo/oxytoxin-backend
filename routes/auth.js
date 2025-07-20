@@ -9,7 +9,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 // Register
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, confirmPassword } = req.body;
+    const { name, email, password, confirmPassword, isAdmin, adminSecret } =
+      req.body;
     if (!name || !email || !password) {
       return res
         .status(400)
@@ -27,10 +28,25 @@ router.post("/register", async (req, res) => {
         .json({ status: "error", message: "Email already in use" });
     }
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed });
+    // Only allow isAdmin if adminSecret matches env var
+    let adminFlag = false;
+    if (isAdmin && adminSecret === process.env.ADMIN_SECRET) {
+      adminFlag = true;
+    }
+    const user = await User.create({
+      name,
+      email,
+      password: hashed,
+      isAdmin: adminFlag,
+    });
     res.json({
       status: "success",
-      user: { id: user._id, name: user.name, email: user.email },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
     });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
@@ -63,13 +79,22 @@ router.post("/login", async (req, res) => {
     user.loginHistory = user.loginHistory || [];
     user.loginHistory.push(new Date());
     await user.save();
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      { id: user._id, email: user.email, isAdmin: user.isAdmin },
+      JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
     res.json({
       status: "success",
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
     });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });

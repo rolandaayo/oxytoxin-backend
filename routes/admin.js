@@ -5,6 +5,34 @@ const upload = require("../lib/imageUploader"); // Assuming you have an image up
 const convertImageUrl = require("../lib/imageUrlConvert"); // Assuming you have a function to convert image URLs
 const User = require("../model/user"); // Add this at the top with other requires
 const bcrypt = require("bcrypt"); // Add this at the top with other requires
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET || "changeme";
+
+// Admin auth middleware
+function adminAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res
+      .status(401)
+      .json({ status: "error", message: "No token provided" });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded.isAdmin) {
+      return res
+        .status(403)
+        .json({ status: "error", message: "Admin access required" });
+    }
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ status: "error", message: "Invalid token" });
+  }
+}
+
+// Protect all admin routes
+router.use(adminAuth);
 
 // Get all products (admin view)
 router.get("/products", async (req, res) => {
@@ -286,13 +314,11 @@ router.post("/users", async (req, res) => {
       },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        status: "error",
-        message: "Error creating user",
-        error: error.message,
-      });
+    res.status(500).json({
+      status: "error",
+      message: "Error creating user",
+      error: error.message,
+    });
   }
 });
 

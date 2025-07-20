@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     lastLogin: { type: Date },
     loginHistory: [{ type: Date }],
+    isAdmin: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const Product = require("../model/product"); // Assuming you have a Product model defined
-const upload = require("../lib/imageUploader"); // Assuming you have an image uploader defined
-const convertImageUrl = require("../lib/imageUrlConvert"); // Assuming you have a function to convert image URLs
-const User = require("../model/user"); // Add this at the top with other requires
-const bcrypt = require("bcrypt"); // Add this at the top with other requires
+const Product = require("../model/product");
+const upload = require("../lib/imageUploader");
+const convertImageUrl = require("../lib/imageUrlConvert");
+const User = require("../model/user");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 
@@ -30,9 +30,6 @@ function adminAuth(req, res, next) {
     return res.status(401).json({ status: "error", message: "Invalid token" });
   }
 }
-
-// Protect all admin routes
-router.use(adminAuth);
 
 // Get all products (admin view)
 router.get("/products", async (req, res) => {

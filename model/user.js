@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     lastLogin: { type: Date },
     loginHistory: [{ type: Date }],
     isAdmin: { type: Boolean, default: false },
+    cart: { type: Array, default: [] }, // Add cart field to store cart items
   },
   { timestamps: true }
 );

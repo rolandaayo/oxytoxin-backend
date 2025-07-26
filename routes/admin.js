@@ -7,6 +7,7 @@ const User = require("../model/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
+const Order = require("../model/order");
 
 // Admin auth middleware
 function adminAuth(req, res, next) {
@@ -364,6 +365,48 @@ router.delete("/users/:id", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error deleting user",
+      error: error.message,
+    });
+  }
+});
+
+// Get all orders (admin view)
+router.get("/orders", async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      status: "success",
+      data: orders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching orders",
+      error: error.message,
+    });
+  }
+});
+
+// Update order status (e.g., mark as successful)
+router.patch("/orders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, paymentRef } = req.body;
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status, ...(paymentRef && { paymentRef }) },
+      { new: true }
+    );
+    if (!order) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Order not found" });
+    }
+    res.status(200).json({ status: "success", data: order });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error updating order",
       error: error.message,
     });
   }

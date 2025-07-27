@@ -9,9 +9,16 @@ const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 // Register
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, confirmPassword, isAdmin, adminSecret } =
-      req.body;
-    if (!name || !email || !password) {
+    const {
+      name,
+      email,
+      password,
+      confirmPassword,
+      address,
+      isAdmin,
+      adminSecret,
+    } = req.body;
+    if (!name || !email || !password || !address) {
       return res
         .status(400)
         .json({ status: "error", message: "All fields are required" });
@@ -37,6 +44,7 @@ router.post("/register", async (req, res) => {
       name,
       email,
       password: hashed,
+      address,
       isAdmin: adminFlag,
     });
     res.json({
@@ -45,6 +53,7 @@ router.post("/register", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        address: user.address,
         isAdmin: user.isAdmin,
       },
     });
@@ -93,6 +102,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        address: user.address,
         isAdmin: user.isAdmin,
       },
     });

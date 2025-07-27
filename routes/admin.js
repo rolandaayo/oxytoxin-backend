@@ -280,11 +280,12 @@ router.get("/users", async (req, res) => {
 // Add new user (admin)
 router.post("/users", async (req, res) => {
   try {
-    const { name, email, avatar } = req.body;
-    if (!name || !email) {
-      return res
-        .status(400)
-        .json({ status: "error", message: "Name and email are required" });
+    const { name, email, address, avatar } = req.body;
+    if (!name || !email || !address) {
+      return res.status(400).json({
+        status: "error",
+        message: "Name, email, and address are required",
+      });
     }
     // Check if user already exists
     const existing = await User.findOne({ email });
@@ -299,6 +300,7 @@ router.post("/users", async (req, res) => {
     const user = await User.create({
       name,
       email,
+      address,
       password: hashed,
       avatar: avatar || "https://randomuser.me/api/portraits/lego/1.jpg",
     });
@@ -325,10 +327,11 @@ router.patch("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    // Only allow updating name, email, avatar
+    // Only allow updating name, email, address, avatar
     const allowed = {};
     if (updates.name) allowed.name = updates.name;
     if (updates.email) allowed.email = updates.email;
+    if (updates.address) allowed.address = updates.address;
     if (updates.avatar) allowed.avatar = updates.avatar;
     const user = await User.findByIdAndUpdate(
       id,

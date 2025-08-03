@@ -280,11 +280,11 @@ router.get("/users", async (req, res) => {
 // Add new user (admin)
 router.post("/users", async (req, res) => {
   try {
-    const { name, email, address, avatar } = req.body;
-    if (!name || !email || !address) {
+    const { name, email, address, password, avatar } = req.body;
+    if (!name || !email || !address || !password) {
       return res.status(400).json({
         status: "error",
-        message: "Name, email, and address are required",
+        message: "Name, email, address, and password are required",
       });
     }
     // Check if user already exists
@@ -294,9 +294,8 @@ router.post("/users", async (req, res) => {
         .status(400)
         .json({ status: "error", message: "Email already in use" });
     }
-    // Generate a random password
-    const randomPassword = Math.random().toString(36).slice(-8);
-    const hashed = await bcrypt.hash(randomPassword, 10);
+    // Hash the provided password
+    const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({
       name,
       email,

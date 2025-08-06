@@ -8,6 +8,12 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 const Order = require("../model/order");
+const {
+  generateToken,
+  generateCode,
+  sendVerificationEmail,
+  sendVerificationCode,
+} = require("../lib/emailService");
 
 // Admin auth middleware
 function adminAuth(req, res, next) {
@@ -294,6 +300,11 @@ router.post("/users", async (req, res) => {
         .status(400)
         .json({ status: "error", message: "Email already in use" });
     }
+
+    // Generate verification code
+    const verificationCode = generateCode();
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     // Hash the provided password
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({
@@ -302,14 +313,24 @@ router.post("/users", async (req, res) => {
       address,
       password: hashed,
       avatar: avatar || "https://randomuser.me/api/portraits/lego/1.jpg",
+      emailVerificationCode: verificationCode,
+      emailVerificationCodeExpires: verificationExpires,
     });
+
+    // Send verification code email
+    const emailSent = await sendVerificationCode(email, verificationCode, name);
+
     res.status(201).json({
       status: "success",
+      message: emailSent
+        ? "User created successfully! Verification code sent."
+        : "User created successfully! Verification code sent. (Email delivery may be delayed)",
       data: {
         id: user._id,
         name: user.name,
         email: user.email,
         avatar: user.avatar,
+        isEmailVerified: user.isEmailVerified,
       },
     });
   } catch (error) {

@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../model/product");
 const Order = require("../model/order");
-const User = require("../model/user"); // Added User model import
+const User = require("../model/user");
+const Gallery = require("../model/gallery");
+const bcrypt = require("bcrypt");
+const upload = require("../lib/imageUploader");
+const convertImageUrl = require("../lib/imageUrlConvert");
 
 // Get all products with optional filtering
 router.get("/products", async (req, res) => {
@@ -509,6 +513,268 @@ router.delete("/cart", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error clearing cart",
+      error: error.message,
+    });
+  }
+});
+
+// Get user profile
+router.get("/profile", async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    if (!userEmail) {
+      return res.status(400).json({
+        status: "error",
+        message: "User email is required",
+      });
+    }
+
+    const user = await User.findOne({ email: userEmail }).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching user profile",
+      error: error.message,
+    });
+  }
+});
+
+// Update user profile
+router.patch("/profile", async (req, res) => {
+  try {
+    const { userEmail, name, phone, address } = req.body;
+    if (!userEmail) {
+      return res.status(400).json({
+        status: "error",
+        message: "User email is required",
+      });
+    }
+
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Update allowed fields
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+
+    await user.save();
+
+    const userWithoutPassword = user.toObject();
+    delete userWithoutPassword.password;
+
+    res.status(200).json({
+      status: "success",
+      data: userWithoutPassword,
+      message: "Profile updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error updating user profile",
+      error: error.message,
+    });
+  }
+});
+
+// Change password
+router.post("/change-password", async (req, res) => {
+  try {
+    const { userEmail, currentPassword, newPassword } = req.body;
+
+    if (!userEmail || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: "error",
+        message: "All fields are required",
+      });
+    }
+
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        status: "error",
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error changing password",
+      error: error.message,
+    });
+  }
+});
+
+// Upload profile picture
+router.post(
+  "/profile-picture",
+  upload.single("profilePicture"),
+  async (req, res) => {
+    try {
+      const { userEmail } = req.body;
+
+      if (!userEmail) {
+        return res.status(400).json({
+          status: "error",
+          message: "User email is required",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          status: "error",
+          message: "No image file uploaded",
+        });
+      }
+
+      const user = await User.findOne({ email: userEmail });
+      if (!user) {
+        return res.status(404).json({
+          status: "error",
+          message: "User not found",
+        });
+      }
+
+      // Upload to Cloudinary
+      const uploadedImage = await convertImageUrl([req.file]);
+      const imageUrl = uploadedImage[0];
+
+      // Update user profile picture
+      user.profilePicture = imageUrl;
+      await user.save();
+
+      res.status(200).json({
+        status: "success",
+        data: { profilePicture: imageUrl },
+        message: "Profile picture uploaded successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Error uploading profile picture",
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Delete account
+router.delete("/delete-account", async (req, res) => {
+  try {
+    const { userEmail } = req.body;
+
+    if (!userEmail) {
+      return res.status(400).json({
+        status: "error",
+        message: "User email is required",
+      });
+    }
+
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Delete user's orders
+    await Order.deleteMany({ userEmail });
+
+    // Delete user
+    await User.findByIdAndDelete(user._id);
+
+    res.status(200).json({
+      status: "success",
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error deleting account",
+      error: error.message,
+    });
+  }
+});
+
+// Get user orders
+router.get("/user-orders", async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+
+    if (!userEmail) {
+      return res.status(400).json({
+        status: "error",
+        message: "User email is required",
+      });
+    }
+
+    const orders = await Order.find({ userEmail }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: "success",
+      data: orders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching user orders",
+      error: error.message,
+    });
+  }
+});
+
+// Get all gallery images
+router.get("/gallery", async (req, res) => {
+  try {
+    const images = await Gallery.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: "success",
+      data: images,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching gallery images",
       error: error.message,
     });
   }

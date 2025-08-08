@@ -5,11 +5,13 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    address: { type: String, required: true }, // Add address field
+    address: { type: String, required: true },
+    phone: { type: String },
+    profilePicture: { type: String },
     lastLogin: { type: Date },
     loginHistory: [{ type: Date }],
     isAdmin: { type: Boolean, default: false },
-    cart: { type: Array, default: [] }, // Add cart field to store cart items
+    cart: { type: Array, default: [] },
     // Email verification fields
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: { type: String },

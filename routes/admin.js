@@ -4,6 +4,7 @@ const Product = require("../model/product");
 const upload = require("../lib/imageUploader");
 const convertImageUrl = require("../lib/imageUrlConvert");
 const User = require("../model/user");
+const Gallery = require("../model/gallery");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
@@ -430,6 +431,88 @@ router.patch("/orders/:id", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error updating order",
+      error: error.message,
+    });
+  }
+});
+
+// Get all gallery images (admin)
+router.get("/gallery", async (req, res) => {
+  try {
+    const images = await Gallery.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: "success",
+      data: images,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching gallery images",
+      error: error.message,
+    });
+  }
+});
+
+// Upload gallery image
+router.post("/gallery", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: "error",
+        message: "No image file uploaded",
+      });
+    }
+
+    // Upload to Cloudinary
+    const uploadedImage = await convertImageUrl([req.file]);
+    const imageUrl = uploadedImage[0];
+
+    // Create gallery entry
+    const galleryImage = new Gallery({
+      title: req.body.title || "",
+      description: req.body.description || "",
+      imageUrl: imageUrl,
+      uploadedBy: "admin",
+    });
+
+    await galleryImage.save();
+
+    res.status(201).json({
+      status: "success",
+      data: galleryImage,
+      message: "Gallery image uploaded successfully",
+    });
+  } catch (error) {
+    console.error("Error uploading gallery image:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error uploading gallery image",
+      error: error.message,
+    });
+  }
+});
+
+// Delete gallery image
+router.delete("/gallery/:id", async (req, res) => {
+  try {
+    const image = await Gallery.findByIdAndDelete(req.params.id);
+
+    if (!image) {
+      return res.status(404).json({
+        status: "error",
+        message: "Gallery image not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Gallery image deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error deleting gallery image",
       error: error.message,
     });
   }

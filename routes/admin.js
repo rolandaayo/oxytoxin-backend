@@ -521,5 +521,5 @@ router.delete("/gallery/:id", async (req, res) => {
 // Export the router to be used in the main server file
 module.exports = router;
 // This code defines a simple Express router for admin-related routes.
-// It includes routes for getting the admin dashboard, creating, updating, and deleting admin users.
+// It includes routes for getting the admin dashboard, creating, updating, and deleting admin users then also for uploading products.
 // The router is then exported to be used in the main server file, allowing for modular route management.

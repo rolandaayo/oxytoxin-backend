@@ -29,4 +29,4 @@ gallerySchema.index({ title: "text", description: "text" });
 
 const Gallery = mongoose.model("Gallery", gallerySchema);
 
-module.exports = Gallery; 
+module.exports = Gallery;

@@ -92,7 +92,12 @@ router.post("/register", async (req, res) => {
     global.tempUsers.set(email, tempUserData);
 
     // Send verification code email
+    console.log(
+      "Attempting to send verification email for registration:",
+      email
+    );
     const emailSent = await sendVerificationCode(email, verificationCode, name);
+    console.log("Email send result:", emailSent);
 
     res.json({
       status: "success",
@@ -106,6 +111,7 @@ router.post("/register", async (req, res) => {
         isAdmin: tempUserData.isAdmin,
         isEmailVerified: false,
       },
+      emailSent, // Include this for debugging
     });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
@@ -221,12 +227,37 @@ router.post("/verify-email-code", async (req, res) => {
         existingUser.isEmailVerified = true;
         existingUser.emailVerificationCode = undefined;
         existingUser.emailVerificationCodeExpires = undefined;
+
+        // Update lastLogin
+        existingUser.lastLogin = new Date();
+        existingUser.loginHistory = existingUser.loginHistory || [];
+        existingUser.loginHistory.push(new Date());
         await existingUser.save();
+
+        // Generate JWT token for automatic login
+        const token = jwt.sign(
+          {
+            id: existingUser._id,
+            email: existingUser.email,
+            isAdmin: existingUser.isAdmin,
+          },
+          JWT_SECRET,
+          { expiresIn: "7d" }
+        );
 
         return res.json({
           status: "success",
           message:
-            "Email verified successfully! You can now log in to your account.",
+            "Welcome to Oxytoxin! Your account has been successfully verified and you're now logged in!",
+          token,
+          user: {
+            id: existingUser._id,
+            name: existingUser.name,
+            email: existingUser.email,
+            address: existingUser.address,
+            isAdmin: existingUser.isAdmin,
+            isEmailVerified: true,
+          },
         });
       }
     }
@@ -260,15 +291,33 @@ router.post("/verify-email-code", async (req, res) => {
       address: tempUserData.address,
       isAdmin: tempUserData.isAdmin,
       isEmailVerified: true, // Mark as verified immediately
+      lastLogin: new Date(),
+      loginHistory: [new Date()],
     });
 
     // Remove from temporary storage
     global.tempUsers.delete(email);
 
+    // Generate JWT token for automatic login
+    const token = jwt.sign(
+      { id: user._id, email: user.email, isAdmin: user.isAdmin },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     res.json({
       status: "success",
       message:
-        "Welcome to Oxytoxin! Your account has been successfully created and verified. You can now log in to your account and start shopping with us!",
+        "Welcome to Oxytoxin! Your account has been successfully created and verified. You're now logged in and ready to start shopping!",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        address: user.address,
+        isAdmin: user.isAdmin,
+        isEmailVerified: true,
+      },
     });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
@@ -612,6 +661,56 @@ router.get("/me", auth, async (req, res) => {
     res.json({ status: "success", user });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+// Test email endpoint (for debugging)
+router.post("/test-email", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res
+        .status(400)
+        .json({ status: "error", message: "Email is required" });
+    }
+
+    console.log("=== EMAIL TEST DEBUG ===");
+    console.log("Testing email send to:", email);
+    console.log("Environment variables check:");
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+    console.log(
+      "EMAIL_PASS length:",
+      process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
+    );
+
+    const testCode = "123456";
+    const emailSent = await sendVerificationCode(email, testCode, "Test User");
+
+    console.log("Email send result:", emailSent);
+    console.log("=== END EMAIL TEST DEBUG ===");
+
+    res.json({
+      status: "success",
+      message: emailSent
+        ? "Test email sent successfully!"
+        : "Test email failed to send",
+      emailSent,
+      debug: {
+        emailUser: process.env.EMAIL_USER,
+        emailPassExists: !!process.env.EMAIL_PASS,
+        emailPassLength: process.env.EMAIL_PASS
+          ? process.env.EMAIL_PASS.length
+          : 0,
+      },
+    });
+  } catch (error) {
+    console.error("Test email error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Test email failed",
+      error: error.message,
+    });
   }
 });
 

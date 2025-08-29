@@ -554,10 +554,49 @@ router.get("/profile", async (req, res) => {
 router.patch("/profile", async (req, res) => {
   try {
     const { userEmail, name, phone, address } = req.body;
+
+    // Validation
     if (!userEmail) {
       return res.status(400).json({
         status: "error",
         message: "User email is required",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid email format",
+      });
+    }
+
+    // Validate name if provided
+    if (name && (name.trim().length < 2 || name.trim().length > 50)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Name must be between 2 and 50 characters",
+      });
+    }
+
+    // Validate phone if provided
+    if (
+      phone &&
+      phone.trim() &&
+      !/^[\+]?[0-9\s\-\(\)]{7,15}$/.test(phone.trim())
+    ) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid phone number format",
+      });
+    }
+
+    // Validate address if provided
+    if (address && address.trim().length > 500) {
+      return res.status(400).json({
+        status: "error",
+        message: "Address must be less than 500 characters",
       });
     }
 
@@ -569,15 +608,19 @@ router.patch("/profile", async (req, res) => {
       });
     }
 
-    // Update allowed fields
-    if (name) user.name = name;
-    if (phone) user.phone = phone;
-    if (address) user.address = address;
+    // Update allowed fields only if they are provided and valid
+    if (name && name.trim()) user.name = name.trim();
+    if (phone !== undefined) user.phone = phone.trim() || null; // Allow clearing phone
+    if (address !== undefined) user.address = address.trim() || user.address; // Don't allow clearing address if required
 
     await user.save();
 
     const userWithoutPassword = user.toObject();
     delete userWithoutPassword.password;
+    delete userWithoutPassword.emailVerificationCode;
+    delete userWithoutPassword.emailVerificationCodeExpires;
+    delete userWithoutPassword.passwordResetCode;
+    delete userWithoutPassword.passwordResetCodeExpires;
 
     res.status(200).json({
       status: "success",
@@ -585,10 +628,14 @@ router.patch("/profile", async (req, res) => {
       message: "Profile updated successfully",
     });
   } catch (error) {
+    console.error("Profile update error:", error);
     res.status(500).json({
       status: "error",
       message: "Error updating user profile",
-      error: error.message,
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
@@ -598,10 +645,43 @@ router.post("/change-password", async (req, res) => {
   try {
     const { userEmail, currentPassword, newPassword } = req.body;
 
+    // Validation
     if (!userEmail || !currentPassword || !newPassword) {
       return res.status(400).json({
         status: "error",
         message: "All fields are required",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid email format",
+      });
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: "error",
+        message: "New password must be at least 6 characters long",
+      });
+    }
+
+    if (newPassword.length > 128) {
+      return res.status(400).json({
+        status: "error",
+        message: "New password must be less than 128 characters",
+      });
+    }
+
+    // Check if new password is same as current
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        status: "error",
+        message: "New password must be different from current password",
       });
     }
 
@@ -628,17 +708,27 @@ router.post("/change-password", async (req, res) => {
     // Hash new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedNewPassword;
+
+    // Update password change timestamp (optional - could be useful for security)
+    user.passwordChangedAt = new Date();
+
     await user.save();
+
+    console.log(`Password changed successfully for user: ${userEmail}`);
 
     res.status(200).json({
       status: "success",
       message: "Password changed successfully",
     });
   } catch (error) {
+    console.error("Password change error:", error);
     res.status(500).json({
       status: "error",
       message: "Error changing password",
-      error: error.message,
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });

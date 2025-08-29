@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     profilePicture: { type: String },
     lastLogin: { type: Date },
     loginHistory: [{ type: Date }],
+    passwordChangedAt: { type: Date },
     isAdmin: { type: Boolean, default: false },
     cart: { type: Array, default: [] },
     // Email verification fields

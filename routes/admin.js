@@ -518,6 +518,42 @@ router.delete("/gallery/:id", async (req, res) => {
   }
 });
 
+// Test email endpoint (for debugging)
+router.post("/test-email", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is required",
+      });
+    }
+
+    console.log("Testing email with config:", {
+      EMAIL_USER: process.env.EMAIL_USER ? "exists" : "missing",
+      EMAIL_PASS: process.env.EMAIL_PASS ? "exists" : "missing",
+    });
+
+    const testCode = "123456";
+    const emailSent = await sendVerificationCode(email, testCode, "Test User");
+
+    res.json({
+      status: "success",
+      message: emailSent
+        ? "Test email sent successfully!"
+        : "Email sending failed",
+      emailSent,
+    });
+  } catch (error) {
+    console.error("Test email error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error sending test email",
+      error: error.message,
+    });
+  }
+});
+
 // Export the router to be used in the main server file
 module.exports = router;
 // This code defines a simple Express router for admin-related routes.

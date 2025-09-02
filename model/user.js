@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String },
     profilePicture: { type: String },
     lastLogin: { type: Date },
+    lastActivity: { type: Date, default: Date.now }, // Track last activity
     loginHistory: [{ type: Date }],
     passwordChangedAt: { type: Date },
     isAdmin: { type: Boolean, default: false },

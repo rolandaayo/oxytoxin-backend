@@ -3,6 +3,10 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user");
 const {
+  checkUserActivity,
+  updateUserActivity,
+} = require("../lib/activityMiddleware");
+const {
   generateToken,
   generateCode,
   sendVerificationEmail,
@@ -650,8 +654,25 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// Get current user
-router.get("/me", auth, async (req, res) => {
+// Logout endpoint
+router.post("/logout", auth, async (req, res) => {
+  try {
+    // Clear last activity to force re-login
+    await User.findByIdAndUpdate(req.user.id, {
+      lastActivity: null,
+    });
+
+    res.json({
+      status: "success",
+      message: "Logged out successfully",
+    });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+// Get current user with activity checking
+router.get("/me", checkUserActivity, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user)
@@ -659,6 +680,50 @@ router.get("/me", auth, async (req, res) => {
         .status(404)
         .json({ status: "error", message: "User not found" });
     res.json({ status: "success", user });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+// Get activity configuration
+router.get("/activity-config", (req, res) => {
+  const { getActivityConfig } = require("../lib/activityMiddleware");
+  getActivityConfig(req, res);
+});
+
+// Cleanup expired sessions (admin only)
+router.post("/cleanup-sessions", auth, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({
+        status: "error",
+        message: "Admin access required",
+      });
+    }
+
+    const { ACTIVITY_TIMEOUT } = require("../lib/activityMiddleware");
+    const cutoffTime = new Date(Date.now() - ACTIVITY_TIMEOUT);
+
+    // Find users who haven't been active for the timeout period
+    const inactiveUsers = await User.find({
+      lastActivity: { $lt: cutoffTime },
+    }).select("email lastActivity lastLogin");
+
+    // Clear lastActivity for inactive users (force re-login)
+    const result = await User.updateMany(
+      { lastActivity: { $lt: cutoffTime } },
+      { $unset: { lastActivity: 1 } }
+    );
+
+    res.json({
+      status: "success",
+      message: `Cleaned up ${result.modifiedCount} inactive sessions`,
+      data: {
+        inactiveUsers: inactiveUsers.length,
+        modifiedCount: result.modifiedCount,
+        cutoffTime: cutoffTime.toISOString(),
+      },
+    });
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
   }

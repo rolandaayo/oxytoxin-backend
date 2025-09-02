@@ -9,6 +9,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 const Order = require("../model/order");
+const { checkUserActivity, updateUserActivity } = require("../lib/activityMiddleware");
 const {
   generateToken,
   generateCode,
@@ -16,7 +17,7 @@ const {
   sendVerificationCode,
 } = require("../lib/emailService");
 
-// Admin auth middleware
+// Admin auth middleware with activity checking
 function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

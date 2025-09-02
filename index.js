@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./lib/connect");
+const { updateUserActivity } = require("./lib/activityMiddleware");
 require("dotenv").config();
 
 // Debug log - REMOVE THIS AFTER TESTING
@@ -20,6 +21,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Activity tracking middleware - updates user activity for all requests
+app.use(updateUserActivity);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

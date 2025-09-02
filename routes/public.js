@@ -553,7 +553,7 @@ router.get("/profile", async (req, res) => {
 // Update user profile
 router.patch("/profile", async (req, res) => {
   try {
-    const { userEmail, name, phone, address } = req.body;
+    const { userEmail, name, phone, address, logoutAfterUpdate } = req.body;
 
     // Validation
     if (!userEmail) {
@@ -613,6 +613,9 @@ router.patch("/profile", async (req, res) => {
     if (phone !== undefined) user.phone = phone.trim() || null; // Allow clearing phone
     if (address !== undefined) user.address = address.trim() || user.address; // Don't allow clearing address if required
 
+    // Update last activity timestamp
+    user.lastActivity = new Date();
+    
     await user.save();
 
     const userWithoutPassword = user.toObject();
@@ -621,6 +624,19 @@ router.patch("/profile", async (req, res) => {
     delete userWithoutPassword.emailVerificationCodeExpires;
     delete userWithoutPassword.passwordResetCode;
     delete userWithoutPassword.passwordResetCodeExpires;
+
+    // If logoutAfterUpdate is true, clear the lastActivity to force re-login
+    if (logoutAfterUpdate === true) {
+      user.lastActivity = null;
+      await user.save();
+      
+      return res.status(200).json({
+        status: "success",
+        data: userWithoutPassword,
+        message: "Profile updated successfully. You have been logged out.",
+        logoutRequired: true
+      });
+    }
 
     res.status(200).json({
       status: "success",
@@ -711,6 +727,9 @@ router.post("/change-password", async (req, res) => {
 
     // Update password change timestamp (optional - could be useful for security)
     user.passwordChangedAt = new Date();
+    
+    // Clear last activity to force re-login after password change (security measure)
+    user.lastActivity = null;
 
     await user.save();
 
@@ -718,7 +737,8 @@ router.post("/change-password", async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "Password changed successfully",
+      message: "Password changed successfully. You have been logged out for security reasons.",
+      logoutRequired: true
     });
   } catch (error) {
     console.error("Password change error:", error);
@@ -729,6 +749,44 @@ router.post("/change-password", async (req, res) => {
         process.env.NODE_ENV === "development"
           ? error.message
           : "Internal server error",
+    });
+  }
+});
+
+// Logout endpoint for public routes
+router.post("/logout", async (req, res) => {
+  try {
+    const { userEmail } = req.body;
+
+    if (!userEmail) {
+      return res.status(400).json({
+        status: "error",
+        message: "User email is required",
+      });
+    }
+
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Clear last activity to force re-login
+    user.lastActivity = null;
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error during logout",
+      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error",
     });
   }
 });
@@ -814,7 +872,8 @@ router.delete("/delete-account", async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "Account deleted successfully",
+      message: "Account deleted successfully. You have been logged out.",
+      logoutRequired: true
     });
   } catch (error) {
     res.status(500).json({

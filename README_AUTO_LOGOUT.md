@@ -6,10 +6,35 @@ This server now includes automatic logout functionality that will automatically 
 
 ## How It Works
 
-1. **Activity Tracking**: Every API request updates the user's `lastActivity` timestamp
+1. **Smart Activity Tracking**: Only meaningful user interactions update the `lastActivity` timestamp (not background requests)
 2. **Timeout Checking**: When a user makes a request, the system checks if they've been inactive for too long
-3. **Automatic Logout**: If inactive for longer than the configured timeout, the user is automatically logged out
+3. **Automatic Logout**: If inactive for longer than 20 minutes, the user is automatically logged out
 4. **Session Cleanup**: Admin can manually clean up expired sessions
+
+**Important**: Users are only logged out when they're truly inactive (like when they minimize the browser for 20+ minutes), not when they're actively using the app.
+
+### What Counts as "Activity"
+
+The system only updates the activity timestamp for meaningful user interactions:
+
+**Meaningful Activities (Updates Activity):**
+
+- Updating profile information
+- Changing password
+- Uploading profile picture
+- Adding/removing items from cart
+- Placing orders
+- Viewing user-specific data (profile, cart, orders)
+- Admin operations (managing products, users, orders)
+
+**Background Activities (Does NOT Update Activity):**
+
+- Automatic API health checks
+- Background data fetching
+- System monitoring requests
+- Non-user-specific data requests
+
+This ensures users are only logged out when they're truly away from the application, not when they're actively browsing or using it.
 
 ## Configuration
 
@@ -18,8 +43,8 @@ This server now includes automatic logout functionality that will automatically 
 Add these to your `.env` file to customize the behavior:
 
 ```env
-# Activity timeout in milliseconds (default: 30 minutes)
-ACTIVITY_TIMEOUT=1800000
+# Activity timeout in milliseconds (default: 20 minutes)
+ACTIVITY_TIMEOUT=1200000
 
 # JWT token expiration (should be longer than activity timeout)
 JWT_EXPIRATION=7d
@@ -35,10 +60,10 @@ CLEANUP_INTERVAL=300000
 
 The system includes predefined timeout values:
 
-- **SHORT**: 15 minutes
-- **MEDIUM**: 30 minutes (default)
-- **LONG**: 1 hour
-- **EXTENDED**: 2 hours
+- **SHORT**: 10 minutes
+- **MEDIUM**: 20 minutes (default)
+- **LONG**: 30 minutes
+- **EXTENDED**: 1 hour
 - **DAY**: 24 hours
 
 ## API Endpoints

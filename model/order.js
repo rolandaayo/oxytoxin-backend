@@ -15,14 +15,32 @@ const orderItemSchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema(
   {
     userEmail: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     items: [orderItemSchema],
     totalAmount: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["pending", "successful"],
+      enum: [
+        "pending",
+        "successful",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ],
       default: "pending",
     },
     paymentRef: { type: String },
+    // Delivery Information
+    deliveryInfo: {
+      fullName: { type: String },
+      phoneNumber: { type: String },
+      address: { type: String },
+      city: { type: String },
+      state: { type: String },
+      postalCode: { type: String },
+      landmark: { type: String },
+    },
   },
   { timestamps: true }
 );

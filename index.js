@@ -15,6 +15,7 @@ console.log("Cloudinary Config:", {
 const adminRoutes = require("./routes/admin");
 const publicRoutes = require("./routes/public");
 const authRoutes = require("./routes/auth");
+const deliveryRoutes = require("./routes/delivery");
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.get("/", (req, res) => {
 app.use("/api/public", publicRoutes); // Public routes for the store frontend
 app.use("/api/admin", adminRoutes); // Admin routes for product management
 app.use("/api/auth", authRoutes); // Auth routes
+app.use("/api/delivery", deliveryRoutes); // Delivery information routes
 
 // For local development
 if (process.env.NODE_ENV !== "production") {

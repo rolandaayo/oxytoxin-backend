@@ -13,7 +13,7 @@ const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
+    req.userId = decoded.id; // Changed from decoded.userId to decoded.id
     req.userEmail = decoded.email;
     next();
   } catch (error) {

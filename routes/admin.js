@@ -9,7 +9,10 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 const Order = require("../model/order");
-const { checkUserActivity, updateUserActivity } = require("../lib/activityMiddleware");
+const {
+  checkUserActivity,
+  updateUserActivity,
+} = require("../lib/activityMiddleware");
 const {
   generateToken,
   generateCode,
@@ -432,6 +435,26 @@ router.patch("/orders/:id", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error updating order",
+      error: error.message,
+    });
+  }
+});
+
+// Delete order
+router.delete("/orders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findByIdAndDelete(id);
+    if (!order) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Order not found" });
+    }
+    res.status(200).json({ status: "success", message: "Order deleted" });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error deleting order",
       error: error.message,
     });
   }

@@ -205,20 +205,38 @@ router.delete("/debug/remove-stubborn-item/:userEmail", async (req, res) => {
 // Create a new order (pending) when user proceeds to payment
 router.post("/orders", async (req, res) => {
   try {
-    const { userEmail, items, totalAmount } = req.body;
+    const { userEmail, items, totalAmount, deliveryInfo } = req.body;
     if (!userEmail || !items || !totalAmount) {
       return res
         .status(400)
         .json({ status: "error", message: "Missing order details" });
     }
-    const order = await Order.create({
+
+    // Find user to get userId
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
+    }
+
+    const orderData = {
       userEmail,
+      userId: user._id,
       items,
       totalAmount,
       status: "pending",
-    });
+    };
+
+    // Add delivery info if provided
+    if (deliveryInfo) {
+      orderData.deliveryInfo = deliveryInfo;
+    }
+
+    const order = await Order.create(orderData);
     res.status(201).json({ status: "success", data: order });
   } catch (error) {
+    console.error("Error creating order:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
@@ -615,7 +633,7 @@ router.patch("/profile", async (req, res) => {
 
     // Update last activity timestamp
     user.lastActivity = new Date();
-    
+
     await user.save();
 
     const userWithoutPassword = user.toObject();
@@ -629,12 +647,12 @@ router.patch("/profile", async (req, res) => {
     if (logoutAfterUpdate === true) {
       user.lastActivity = null;
       await user.save();
-      
+
       return res.status(200).json({
         status: "success",
         data: userWithoutPassword,
         message: "Profile updated successfully. You have been logged out.",
-        logoutRequired: true
+        logoutRequired: true,
       });
     }
 
@@ -727,7 +745,7 @@ router.post("/change-password", async (req, res) => {
 
     // Update password change timestamp (optional - could be useful for security)
     user.passwordChangedAt = new Date();
-    
+
     // Clear last activity to force re-login after password change (security measure)
     user.lastActivity = null;
 
@@ -737,8 +755,9 @@ router.post("/change-password", async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "Password changed successfully. You have been logged out for security reasons.",
-      logoutRequired: true
+      message:
+        "Password changed successfully. You have been logged out for security reasons.",
+      logoutRequired: true,
     });
   } catch (error) {
     console.error("Password change error:", error);
@@ -786,7 +805,10 @@ router.post("/logout", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Error during logout",
-      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
@@ -873,7 +895,7 @@ router.delete("/delete-account", async (req, res) => {
     res.status(200).json({
       status: "success",
       message: "Account deleted successfully. You have been logged out.",
-      logoutRequired: true
+      logoutRequired: true,
     });
   } catch (error) {
     res.status(500).json({

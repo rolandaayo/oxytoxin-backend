@@ -9,10 +9,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 const Order = require("../model/order");
-const {
-  checkUserActivity,
-  updateUserActivity,
-} = require("../lib/activityMiddleware");
+const { checkUserActivity } = require("../lib/activityMiddleware");
 const {
   generateToken,
   generateCode,

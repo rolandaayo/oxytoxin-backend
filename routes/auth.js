@@ -2,10 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../model/user");
-const {
-  checkUserActivity,
-  updateUserActivity,
-} = require("../lib/activityMiddleware");
+const { checkUserActivity } = require("../lib/activityMiddleware");
 const {
   generateToken,
   generateCode,
@@ -251,8 +248,7 @@ router.post("/verify-email-code", async (req, res) => {
 
         return res.json({
           status: "success",
-          message:
-            "Welcome to Oxytoxin! Your account has been successfully verified and you're now logged in!",
+          message: "Welcome to Oxytoxin! Your account has been successfully!",
           token,
           user: {
             id: existingUser._id,
@@ -311,8 +307,7 @@ router.post("/verify-email-code", async (req, res) => {
 
     res.json({
       status: "success",
-      message:
-        "Welcome to Oxytoxin! Your account has been successfully created and verified. You're now logged in and ready to start shopping!",
+      message: "Welcome to Oxytoxin! Your account has been successfully!",
       token,
       user: {
         id: user._id,

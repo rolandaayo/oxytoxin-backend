@@ -819,9 +819,24 @@ router.post(
   upload.single("profilePicture"),
   async (req, res) => {
     try {
+      console.log("=== PROFILE PICTURE UPLOAD DEBUG ===");
+      console.log("Request body:", req.body);
+      console.log(
+        "Request file:",
+        req.file
+          ? {
+              fieldname: req.file.fieldname,
+              originalname: req.file.originalname,
+              mimetype: req.file.mimetype,
+              size: req.file.size,
+            }
+          : "No file"
+      );
+
       const { userEmail } = req.body;
 
       if (!userEmail) {
+        console.log("Error: User email is required");
         return res.status(400).json({
           status: "error",
           message: "User email is required",
@@ -829,6 +844,7 @@ router.post(
       }
 
       if (!req.file) {
+        console.log("Error: No image file uploaded");
         return res.status(400).json({
           status: "error",
           message: "No image file uploaded",
@@ -837,19 +853,25 @@ router.post(
 
       const user = await User.findOne({ email: userEmail });
       if (!user) {
+        console.log("Error: User not found for email:", userEmail);
         return res.status(404).json({
           status: "error",
           message: "User not found",
         });
       }
 
+      console.log("User found:", user.email);
+
       // Upload to Cloudinary
+      console.log("Starting Cloudinary upload...");
       const uploadedImage = await convertImageUrl([req.file]);
-      const imageUrl = uploadedImage[0];
+      const imageUrl = uploadedImage[0].url;
+      console.log("Cloudinary upload successful, URL:", imageUrl);
 
       // Update user profile picture
       user.profilePicture = imageUrl;
       await user.save();
+      console.log("User profile picture updated successfully");
 
       res.status(200).json({
         status: "success",
@@ -857,6 +879,7 @@ router.post(
         message: "Profile picture uploaded successfully",
       });
     } catch (error) {
+      console.error("Error in profile picture upload:", error);
       res.status(500).json({
         status: "error",
         message: "Error uploading profile picture",

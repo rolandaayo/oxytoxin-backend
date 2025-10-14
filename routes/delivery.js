@@ -29,6 +29,7 @@ const verifyToken = (req, res, next) => {
     });
     req.userId = decoded.id; // Changed from decoded.userId to decoded.id
     req.userEmail = decoded.email;
+    req.user = decoded; // Add this for compatibility with existing code
     console.log("Token verification successful, proceeding...");
     next();
   } catch (error) {
@@ -38,7 +39,7 @@ const verifyToken = (req, res, next) => {
 };
 
 // Save delivery information
-router.post("/save", checkUserActivity, async (req, res) => {
+router.post("/save", verifyToken, async (req, res) => {
   try {
     console.log("=== DELIVERY SAVE DEBUG ===");
     console.log("User ID:", req.user.id);
@@ -110,7 +111,7 @@ router.post("/save", checkUserActivity, async (req, res) => {
 });
 
 // Get delivery information for current user
-router.get("/get", checkUserActivity, async (req, res) => {
+router.get("/get", verifyToken, async (req, res) => {
   try {
     const deliveryInfo = await Delivery.findOne({ userId: req.user.id });
 

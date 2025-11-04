@@ -7,6 +7,15 @@ const { checkUserActivity } = require("../lib/activityMiddleware");
 // Get user's wishlist
 router.get("/", checkUserActivity, async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
+      });
+    }
+
     const wishlist = await Wishlist.findOne({ userId: req.user.id }).populate(
       "items.productId"
     );
@@ -35,6 +44,15 @@ router.get("/", checkUserActivity, async (req, res) => {
 // Add item to wishlist
 router.post("/add", checkUserActivity, async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
+      });
+    }
+
     const { productId } = req.body;
 
     if (!productId) {
@@ -106,6 +124,15 @@ router.post("/add", checkUserActivity, async (req, res) => {
 // Remove item from wishlist
 router.delete("/remove/:productId", checkUserActivity, async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
+      });
+    }
+
     const { productId } = req.params;
 
     const wishlist = await Wishlist.findOne({ userId: req.user.id });
@@ -140,6 +167,15 @@ router.delete("/remove/:productId", checkUserActivity, async (req, res) => {
 // Clear entire wishlist
 router.delete("/clear", checkUserActivity, async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
+      });
+    }
+
     const wishlist = await Wishlist.findOne({ userId: req.user.id });
 
     if (!wishlist) {
@@ -168,6 +204,15 @@ router.delete("/clear", checkUserActivity, async (req, res) => {
 // Check if item is in wishlist
 router.get("/check/:productId", checkUserActivity, async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+        code: "AUTH_REQUIRED",
+      });
+    }
+
     const { productId } = req.params;
 
     const wishlist = await Wishlist.findOne({ userId: req.user.id });

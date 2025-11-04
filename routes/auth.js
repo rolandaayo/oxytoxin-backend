@@ -151,10 +151,12 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Update lastLogin and loginHistory
-    user.lastLogin = new Date();
+    // Update lastLogin, lastActivity and loginHistory
+    const now = new Date();
+    user.lastLogin = now;
+    user.lastActivity = now; // Set lastActivity to prevent immediate session expiry
     user.loginHistory = user.loginHistory || [];
-    user.loginHistory.push(new Date());
+    user.loginHistory.push(now);
     await user.save();
     const token = jwt.sign(
       { id: user._id, email: user.email, isAdmin: user.isAdmin },
@@ -229,10 +231,12 @@ router.post("/verify-email-code", async (req, res) => {
         existingUser.emailVerificationCode = undefined;
         existingUser.emailVerificationCodeExpires = undefined;
 
-        // Update lastLogin
-        existingUser.lastLogin = new Date();
+        // Update lastLogin and lastActivity
+        const now = new Date();
+        existingUser.lastLogin = now;
+        existingUser.lastActivity = now; // Set lastActivity to prevent immediate session expiry
         existingUser.loginHistory = existingUser.loginHistory || [];
-        existingUser.loginHistory.push(new Date());
+        existingUser.loginHistory.push(now);
         await existingUser.save();
 
         // Generate JWT token for automatic login
@@ -292,6 +296,7 @@ router.post("/verify-email-code", async (req, res) => {
       isAdmin: tempUserData.isAdmin,
       isEmailVerified: true, // Mark as verified immediately
       lastLogin: new Date(),
+      lastActivity: new Date(), // Set lastActivity to prevent immediate session expiry
       loginHistory: [new Date()],
     });
 

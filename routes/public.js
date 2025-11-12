@@ -704,7 +704,7 @@ router.patch("/profile", async (req, res) => {
     // Update allowed fields only if they are provided and valid
     if (name && name.trim()) user.name = name.trim();
     if (phone !== undefined) user.phone = phone.trim() || null; // Allow clearing phone
-    if (address !== undefined) user.address = address.trim() || user.address; // Don't allow clearing address if required
+    if (address !== undefined && address.trim()) user.address = address.trim(); // Only update if address is not empty
 
     // Update last activity timestamp
     user.lastActivity = new Date();
@@ -738,6 +738,11 @@ router.patch("/profile", async (req, res) => {
     });
   } catch (error) {
     console.error("Profile update error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
     res.status(500).json({
       status: "error",
       message: "Error updating user profile",

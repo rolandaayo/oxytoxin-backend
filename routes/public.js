@@ -241,6 +241,81 @@ router.post("/orders", async (req, res) => {
   }
 });
 
+// Verify payment and update order status
+router.post("/verify-payment", async (req, res) => {
+  try {
+    const { orderId, paymentRef, status } = req.body;
+
+    if (!orderId || !status) {
+      return res.status(400).json({
+        status: "error",
+        message: "Order ID and status are required",
+      });
+    }
+
+    // Find and update the order
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        status: status,
+        ...(paymentRef && { paymentRef }),
+      },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        status: "error",
+        message: "Order not found",
+      });
+    }
+
+    // Send emails when payment is successful
+    if (status === "successful") {
+      try {
+        // Get user details
+        const user = await User.findOne({ email: order.userEmail });
+        const userName = user ? user.name : "Customer";
+
+        // Import email functions
+        const {
+          sendPaymentConfirmationToUser,
+          sendPaymentNotificationToOwner,
+        } = require("../lib/emailService");
+
+        // Send confirmation email to user
+        await sendPaymentConfirmationToUser(
+          order.userEmail,
+          userName,
+          order,
+          paymentRef
+        );
+
+        // Send notification email to owner
+        await sendPaymentNotificationToOwner(order, paymentRef);
+
+        console.log(`Payment confirmation emails sent for order ${order._id}`);
+      } catch (emailError) {
+        console.error("Error sending payment emails:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: order,
+      message: "Payment verified and order updated successfully",
+    });
+  } catch (error) {
+    console.error("Error verifying payment:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error verifying payment",
+      error: error.message,
+    });
+  }
+});
+
 // Get user's cart
 router.get("/cart", async (req, res) => {
   try {

@@ -15,6 +15,8 @@ const {
   generateCode,
   sendVerificationEmail,
   sendVerificationCode,
+  sendPaymentConfirmationToUser,
+  sendPaymentNotificationToOwner,
 } = require("../lib/emailService");
 
 // Admin auth middleware with activity checking
@@ -421,12 +423,39 @@ router.patch("/orders/:id", async (req, res) => {
       id,
       { status, ...(paymentRef && { paymentRef }) },
       { new: true }
-    );
+    ).populate("userId", "name email");
+
     if (!order) {
       return res
         .status(404)
         .json({ status: "error", message: "Order not found" });
     }
+
+    // Send emails when order status is updated to "successful"
+    if (status === "successful") {
+      try {
+        // Get user details
+        const user = await User.findOne({ email: order.userEmail });
+        const userName = user ? user.name : "Customer";
+
+        // Send confirmation email to user
+        await sendPaymentConfirmationToUser(
+          order.userEmail,
+          userName,
+          order,
+          paymentRef
+        );
+
+        // Send notification email to owner
+        await sendPaymentNotificationToOwner(order, paymentRef);
+
+        console.log(`Payment confirmation emails sent for order ${order._id}`);
+      } catch (emailError) {
+        console.error("Error sending payment emails:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
     res.status(200).json({ status: "success", data: order });
   } catch (error) {
     res.status(500).json({

@@ -1031,6 +1031,33 @@ router.get("/user-orders", async (req, res) => {
   }
 });
 
+// Get single order by ID (for tracking)
+router.get("/orders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        status: "error",
+        message: "Order not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: order,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error fetching order",
+      error: error.message,
+    });
+  }
+});
+
 // Get all gallery images
 router.get("/gallery", async (req, res) => {
   try {

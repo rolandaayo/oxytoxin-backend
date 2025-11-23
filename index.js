@@ -16,6 +16,7 @@ const publicRoutes = require("./routes/public");
 const authRoutes = require("./routes/auth");
 const deliveryRoutes = require("./routes/delivery");
 const wishlistRoutes = require("./routes/wishlist");
+const messageRoutes = require("./routes/messages");
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use("/api/admin", adminRoutes); // Admin routes for product management
 app.use("/api/auth", authRoutes); // Auth routes
 app.use("/api/delivery", deliveryRoutes); // Delivery information routes
 app.use("/api/wishlist", wishlistRoutes); // Wishlist routes
+app.use("/api/messages", messageRoutes); // Message/Chat routes
 
 // For local development
 if (process.env.NODE_ENV !== "production") {

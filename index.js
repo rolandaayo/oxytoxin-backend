@@ -53,7 +53,7 @@ app.use(async (req, res, next) => {
 app.get("/", (req, res) => {
   res.json({
     status: "success",
-    message: "Welcome to Oxytoxin API",
+    message: "Welcome to Oxytoxin Apperel API ",
     endpoints: {
       public: "/api/public",
       admin: "/api/admin",

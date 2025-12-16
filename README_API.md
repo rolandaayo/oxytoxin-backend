@@ -5,6 +5,7 @@ Base URL: `/api` (mounted in `index.js`)
 **Notes**: This document lists the server endpoints grouped by route module. For each endpoint: **Method**, **Path**, **Description**, **Auth/Middleware**, and **Key request fields** are provided. Responses shown are the common success codes observed in the code.
 
 **Authentication (`/api/auth`)**
+
 - **POST /api/auth/register**: Register (stores user temporarily, sends verification code). Auth: No. Body: `name`, `email`, `password`, `confirmPassword`, `address`, optional `isAdmin` + `adminSecret`.
 - **POST /api/auth/login**: Login and receive JWT. Auth: No. Body: `email`, `password`. Returns: `token`, `user`.
 - **POST /api/auth/verify-email-code**: Verify registration code and create account. Auth: No. Body: `email`, `code`. Returns: `token`, `user` (201/200).
@@ -21,6 +22,7 @@ Base URL: `/api` (mounted in `index.js`)
 - **POST /api/auth/test-email**: Debug endpoint to send a verification code to an email. Auth: No. Body: `email`.
 
 **Public (`/api/public`)**
+
 - **GET /api/public/products**: List products with filters. Auth: No. Query: `category`, `minPrice`, `maxPrice`, `inStock=true`, `search`.
 - **GET /api/public/products/:id**: Get single product by id. Auth: No.
 - **GET /api/public/products/category/:category**: Products by category. Auth: No.
@@ -51,6 +53,7 @@ Base URL: `/api` (mounted in `index.js`)
   - **GET /api/public/gallery**: Get gallery images.
 
 **Admin (`/api/admin`)**
+
 - **GET /api/admin/products**: Get all products (admin view). Auth: Typically admin (middleware in file checks token if used externally).
 - **POST /api/admin/upload**: Upload product images. Middleware: `upload.array("images", 4)`. Form-data: `images` (up to 4). Returns uploaded URLs.
 - **POST /api/admin/products**: Create product. Body: `name`, `price`, `description`, `category`, `stock`, `mainImage`, optional `images`, `colors`, `features`.
@@ -70,6 +73,7 @@ Base URL: `/api` (mounted in `index.js`)
 - **POST /api/admin/test-email**: Debug email send. Body: `email`.
 
 **Delivery (`/api/delivery`)**
+
 - **POST /api/delivery/save**: Save or update delivery info for current user. Auth: Yes (JWT via `verifyToken` middleware). Body: `fullName`, `phoneNumber`, `address`, `city`, `state`, optional `postalCode`, `landmark`.
 - **GET /api/delivery/get**: Get delivery info for current user. Auth: Yes.
 - **GET /api/delivery/admin/all**: Admin-only: get all delivery info. Auth: `checkUserActivity` + admin check.
@@ -77,6 +81,7 @@ Base URL: `/api` (mounted in `index.js`)
 - **PUT /api/delivery/admin/user/:userId**: Admin-only: update delivery info for user.
 
 **Wishlist (`/api/wishlist`)**
+
 - **GET /api/wishlist/**: Get current user's wishlist. Auth: Yes (`checkUserActivity`).
 - **POST /api/wishlist/add**: Add item to wishlist. Auth: Yes. Body: `productId`.
 - **DELETE /api/wishlist/remove/:productId**: Remove by product id. Auth: Yes.
@@ -84,6 +89,7 @@ Base URL: `/api` (mounted in `index.js`)
 - **GET /api/wishlist/check/:productId**: Check if product is in wishlist. Auth: Yes.
 
 **Messages (`/api/messages`)**
+
 - **GET /api/messages/conversation?userEmail=...**: Get or create conversation for user. Auth: No (uses `userEmail`).
 - **POST /api/messages/send**: Send message from user. Body: `userEmail`, `message`.
 - **POST /api/messages/admin/reply**: Send admin reply. Body: `userEmail`, `message`.
@@ -93,11 +99,13 @@ Base URL: `/api` (mounted in `index.js`)
 - **GET /api/messages/unread-count?userEmail=...**: Get unread count for user.
 
 **Appendix & Next Steps**
+
 - **Auth**: Most protected endpoints expect a Bearer JWT in `Authorization: Bearer <token>`; some routes use `checkUserActivity` which validates token and session activity.
 - **File uploads**: Use `multipart/form-data` for endpoints that accept files (`/api/admin/upload`, `/api/admin/gallery`, `/api/public/profile-picture`).
 - **Improvements**: Add example request/response bodies, authentication examples, and a Postman/Insomnia collection for easier testing.
 
 If you want, I can:
+
 - generate an OpenAPI/Swagger spec from this listing,
 - create a Postman collection, or
 - add example request/response snippets for chosen endpoints.

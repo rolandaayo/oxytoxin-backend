@@ -134,7 +134,7 @@ Authorization: Bearer <jwt>
 
 ### Admin
 
-Admin endpoints require a JWT whose `isAdmin` claim is `true`.
+Admin endpoints are intended for a JWT whose `isAdmin` claim is `true`. The current `routes/admin.js` module defines an `adminAuth` middleware but does not attach it to the routes, so these endpoints should be protected before public deployment.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
